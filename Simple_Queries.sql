@@ -1,0 +1,84 @@
+USE movie_booking_db;
+# Simple SQL Queries — Movie Ticket Booking System
+
+
+-- Q1. Display all customers
+SELECT * FROM customers;
+
+-- Q2. Display all movies
+SELECT * FROM movies;
+
+-- Q3. Display all theatres
+SELECT * FROM theatres;
+
+-- Q4. Display all bookings
+SELECT * FROM bookings;
+
+-- Q5. Display customer names and cities
+SELECT customer_name, city FROM customers;
+
+-- Q6. Display movie names, genres, and languages
+SELECT movie_name, genre, language FROM movies;
+
+-- Q7. Display theatres in a specific city
+SELECT * FROM theatres
+WHERE city = 'Visakhapatnam';
+
+-- Q8. Display movies of a specific genre
+SELECT * FROM movies
+WHERE genre = 'Action';
+
+-- Q9. Display movies longer than 150 minutes
+SELECT movie_name, duration_minutes
+FROM movies
+WHERE duration_minutes > 150;
+
+-- Q10. Display customers who signed up after a given date
+SELECT customer_name, signup_date
+FROM customers
+WHERE signup_date > '2025-01-01';
+
+-- Q11. Display bookings with more than 2 seats
+SELECT booking_id, customer_id, seats_booked
+FROM bookings
+WHERE seats_booked > 2;
+
+-- Q12. Display completed bookings
+SELECT * FROM bookings
+WHERE booking_status = 'Completed';
+
+-- Q13. Display bookings paid using UPI
+SELECT * FROM bookings
+WHERE payment_method = 'UPI';
+
+-- Q14. Display movies whose names start with 'A'
+SELECT * FROM movies
+WHERE movie_name LIKE 'A%';
+
+-- Q15. Display customers from Visakhapatnam
+SELECT customer_name, city
+FROM customers
+WHERE city = 'Visakhapatnam';
+
+-- Q16. Display unique movie languages
+SELECT DISTINCT language
+FROM movies;
+
+-- Q17. Display the most expensive bookings first
+SELECT booking_id, ticket_amount
+FROM bookings
+ORDER BY ticket_amount DESC;
+
+-- Q18. Display the 10 highest-value bookings
+SELECT booking_id, ticket_amount
+FROM bookings
+ORDER BY ticket_amount DESC
+LIMIT 10;
+
+-- Q19. Count the total number of customers
+SELECT COUNT(*) AS total_customers
+FROM customers;
+
+-- Q20. Find the total ticket revenue
+SELECT SUM(ticket_amount) AS total_revenue
+FROM bookings;

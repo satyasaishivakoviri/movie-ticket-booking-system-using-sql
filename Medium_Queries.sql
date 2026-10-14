@@ -1,0 +1,120 @@
+# Medium SQL Queries — Movie Ticket Booking System
+
+USE movie_booking_db;
+
+-- Q1. Display bookings with customer names
+SELECT b.booking_id, c.customer_name, b.show_date, b.ticket_amount
+FROM bookings b
+JOIN customers c ON b.customer_id = c.customer_id;
+
+-- Q2. Display bookings with movie names
+SELECT b.booking_id, m.movie_name, b.show_date, b.seats_booked
+FROM bookings b
+JOIN movies m ON b.movie_id = m.movie_id;
+
+-- Q3. Display bookings with theatre names
+SELECT b.booking_id, t.theatre_name, t.city, b.show_date
+FROM bookings b
+JOIN theatres t ON b.theatre_id = t.theatre_id;
+
+-- Q4. Display complete booking details using all four tables
+SELECT b.booking_id, c.customer_name, m.movie_name,
+       t.theatre_name, b.show_date, b.seats_booked, b.ticket_amount
+FROM bookings b
+JOIN customers c ON b.customer_id = c.customer_id
+JOIN movies m ON b.movie_id = m.movie_id
+JOIN theatres t ON b.theatre_id = t.theatre_id;
+
+-- Q5. Count bookings made by each customer
+SELECT c.customer_id, c.customer_name, COUNT(b.booking_id) AS total_bookings
+FROM customers c
+LEFT JOIN bookings b ON c.customer_id = b.customer_id
+GROUP BY c.customer_id, c.customer_name;
+
+-- Q6. Calculate total revenue by movie
+SELECT m.movie_name, SUM(b.ticket_amount) AS total_revenue
+FROM movies m
+JOIN bookings b ON m.movie_id = b.movie_id
+GROUP BY m.movie_id, m.movie_name;
+
+-- Q7. Calculate total seats booked for each movie
+SELECT m.movie_name, SUM(b.seats_booked) AS total_seats
+FROM movies m
+JOIN bookings b ON m.movie_id = b.movie_id
+GROUP BY m.movie_id, m.movie_name;
+
+-- Q8. Find average ticket amount by payment method
+SELECT payment_method, AVG(ticket_amount) AS average_ticket_amount
+FROM bookings
+GROUP BY payment_method;
+
+-- Q9. Find theatres with more than 5 bookings
+SELECT t.theatre_name, COUNT(b.booking_id) AS total_bookings
+FROM theatres t
+JOIN bookings b ON t.theatre_id = b.theatre_id
+GROUP BY t.theatre_id, t.theatre_name
+HAVING COUNT(b.booking_id) > 5;
+
+-- Q10. Find movies with total revenue greater than 10000
+SELECT m.movie_name, SUM(b.ticket_amount) AS total_revenue
+FROM movies m
+JOIN bookings b ON m.movie_id = b.movie_id
+GROUP BY m.movie_id, m.movie_name
+HAVING SUM(b.ticket_amount) > 10000;
+
+-- Q11. Find the highest ticket amount
+SELECT MAX(ticket_amount) AS highest_ticket_amount
+FROM bookings;
+
+-- Q12. Find the average number of seats booked
+SELECT AVG(seats_booked) AS average_seats_booked
+FROM bookings;
+
+-- Q13. Categorize bookings by ticket amount
+SELECT booking_id, ticket_amount,
+       CASE
+           WHEN ticket_amount >= 1000 THEN 'High'
+           WHEN ticket_amount >= 500 THEN 'Medium'
+           ELSE 'Low'
+       END AS booking_category
+FROM bookings;
+
+-- Q14. Display bookings made in 2026
+SELECT * FROM bookings
+WHERE YEAR(show_date) = 2026;
+
+-- Q15. Display bookings scheduled for a particular month
+SELECT * FROM bookings
+WHERE MONTH(show_date) = 9;
+
+-- Q16. Find customers who have made at least one booking
+SELECT customer_name
+FROM customers
+WHERE customer_id IN (
+    SELECT customer_id FROM bookings
+);
+
+-- Q17. Find movies that have never been booked
+SELECT m.movie_name
+FROM movies m
+LEFT JOIN bookings b ON m.movie_id = b.movie_id
+WHERE b.booking_id IS NULL;
+
+-- Q18. Find bookings above the average ticket amount
+SELECT booking_id, ticket_amount
+FROM bookings
+WHERE ticket_amount > (
+    SELECT AVG(ticket_amount) FROM bookings
+);
+
+-- Q19. Find the number of bookings for each booking status
+SELECT booking_status, COUNT(*) AS total_bookings
+FROM bookings
+GROUP BY booking_status;
+
+-- Q20. Find total revenue by theatre city
+SELECT t.city, SUM(b.ticket_amount) AS total_revenue
+FROM theatres t
+JOIN bookings b ON t.theatre_id = b.theatre_id
+GROUP BY t.city
+ORDER BY total_revenue DESC;

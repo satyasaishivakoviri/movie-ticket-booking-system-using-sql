@@ -1,0 +1,184 @@
+# Hard SQL Queries — Movie Ticket Booking System
+
+USE movie_booking_db;
+
+-- Q1. Find the highest-revenue movie
+SELECT m.movie_name, SUM(b.ticket_amount) AS total_revenue
+FROM movies m
+JOIN bookings b ON m.movie_id = b.movie_id
+GROUP BY m.movie_id, m.movie_name
+ORDER BY total_revenue DESC
+LIMIT 1;
+
+-- Q2. Find the customer who spent the most on tickets
+SELECT c.customer_name, SUM(b.ticket_amount) AS total_spent
+FROM customers c
+JOIN bookings b ON c.customer_id = b.customer_id
+GROUP BY c.customer_id, c.customer_name
+ORDER BY total_spent DESC
+LIMIT 1;
+
+-- Q3. Find the theatre with the highest booking revenue
+SELECT t.theatre_name, SUM(b.ticket_amount) AS total_revenue
+FROM theatres t
+JOIN bookings b ON t.theatre_id = b.theatre_id
+GROUP BY t.theatre_id, t.theatre_name
+ORDER BY total_revenue DESC
+LIMIT 1;
+
+-- Q4. Find the second-highest ticket amount
+SELECT MAX(ticket_amount) AS second_highest_ticket
+FROM bookings
+WHERE ticket_amount < (
+    SELECT MAX(ticket_amount) FROM bookings
+);
+
+-- Q5. Find customers whose total spending is above the average customer spending
+WITH customer_spending AS (
+    SELECT customer_id, SUM(ticket_amount) AS total_spent
+    FROM bookings
+    GROUP BY customer_id
+)
+SELECT c.customer_name, cs.total_spent
+FROM customer_spending cs
+JOIN customers c ON cs.customer_id = c.customer_id
+WHERE cs.total_spent > (SELECT AVG(total_spent) FROM customer_spending);
+
+-- Q6. Rank movies by total revenue
+SELECT m.movie_name,
+       SUM(b.ticket_amount) AS total_revenue,
+       DENSE_RANK() OVER (ORDER BY SUM(b.ticket_amount) DESC) AS revenue_rank
+FROM movies m
+JOIN bookings b ON m.movie_id = b.movie_id
+GROUP BY m.movie_id, m.movie_name;
+
+-- Q7. Rank customers by total spending
+SELECT c.customer_name,
+       SUM(b.ticket_amount) AS total_spent,
+       DENSE_RANK() OVER (ORDER BY SUM(b.ticket_amount) DESC) AS spending_rank
+FROM customers c
+JOIN bookings b ON c.customer_id = b.customer_id
+GROUP BY c.customer_id, c.customer_name;
+
+-- Q8. Find the top 3 movies by revenue
+SELECT m.movie_name, SUM(b.ticket_amount) AS total_revenue
+FROM movies m
+JOIN bookings b ON m.movie_id = b.movie_id
+GROUP BY m.movie_id, m.movie_name
+ORDER BY total_revenue DESC
+LIMIT 3;
+
+-- Q9. Find the top 3 customers by total spending
+SELECT c.customer_name, SUM(b.ticket_amount) AS total_spent
+FROM customers c
+JOIN bookings b ON c.customer_id = b.customer_id
+GROUP BY c.customer_id, c.customer_name
+ORDER BY total_spent DESC
+LIMIT 3;
+
+-- Q10. Find the most-booked movie by number of bookings
+SELECT m.movie_name, COUNT(b.booking_id) AS booking_count
+FROM movies m
+JOIN bookings b ON m.movie_id = b.movie_id
+GROUP BY m.movie_id, m.movie_name
+ORDER BY booking_count DESC
+LIMIT 1;
+
+-- Q11. Find the customer with the highest number of bookings
+SELECT c.customer_name, COUNT(b.booking_id) AS booking_count
+FROM customers c
+JOIN bookings b ON c.customer_id = b.customer_id
+GROUP BY c.customer_id, c.customer_name
+ORDER BY booking_count DESC
+LIMIT 1;
+
+-- Q12. Find the movie with the highest average ticket amount
+SELECT m.movie_name, AVG(b.ticket_amount) AS average_ticket
+FROM movies m
+JOIN bookings b ON m.movie_id = b.movie_id
+GROUP BY m.movie_id, m.movie_name
+ORDER BY average_ticket DESC
+LIMIT 1;
+
+-- Q13. Find each movie's percentage contribution to total revenue
+SELECT m.movie_name,
+       SUM(b.ticket_amount) AS movie_revenue,
+       ROUND(SUM(b.ticket_amount) * 100.0 /
+             (SELECT SUM(ticket_amount) FROM bookings), 2) AS revenue_percentage
+FROM movies m
+JOIN bookings b ON m.movie_id = b.movie_id
+GROUP BY m.movie_id, m.movie_name;
+
+-- Q14. Find the busiest theatre based on total seats booked
+SELECT t.theatre_name, SUM(b.seats_booked) AS total_seats_booked
+FROM theatres t
+JOIN bookings b ON t.theatre_id = b.theatre_id
+GROUP BY t.theatre_id, t.theatre_name
+ORDER BY total_seats_booked DESC
+LIMIT 1;
+
+-- Q15. Find customers who booked more seats than the average booking
+SELECT c.customer_name, SUM(b.seats_booked) AS total_seats_booked
+FROM customers c
+JOIN bookings b ON c.customer_id = b.customer_id
+GROUP BY c.customer_id, c.customer_name
+HAVING SUM(b.seats_booked) > (SELECT AVG(seats_booked) FROM bookings);
+
+-- Q16. Find the highest-revenue movie in each language
+WITH movie_revenue AS (
+    SELECT m.movie_id, m.movie_name, m.language,
+           SUM(b.ticket_amount) AS total_revenue
+    FROM movies m
+    JOIN bookings b ON m.movie_id = b.movie_id
+    GROUP BY m.movie_id, m.movie_name, m.language
+), ranked_movies AS (
+    SELECT *,
+           ROW_NUMBER() OVER (
+               PARTITION BY language
+               ORDER BY total_revenue DESC
+           ) AS rn
+    FROM movie_revenue
+)
+SELECT movie_name, language, total_revenue
+FROM ranked_movies
+WHERE rn = 1;
+
+-- Q17. Find repeat customers (more than one booking)
+SELECT c.customer_name, COUNT(b.booking_id) AS booking_count
+FROM customers c
+JOIN bookings b ON c.customer_id = b.customer_id
+GROUP BY c.customer_id, c.customer_name
+HAVING COUNT(b.booking_id) > 1;
+
+-- Q18. Find the highest-value booking for each booking status
+WITH ranked_bookings AS (
+    SELECT booking_status, booking_id, ticket_amount,
+           ROW_NUMBER() OVER (
+               PARTITION BY booking_status
+               ORDER BY ticket_amount DESC
+           ) AS rn
+    FROM bookings
+)
+SELECT booking_status, booking_id, ticket_amount
+FROM ranked_bookings
+WHERE rn = 1;
+
+-- Q19. Compare completed-booking revenue with cancelled-booking revenue
+SELECT booking_status, SUM(ticket_amount) AS total_revenue
+FROM bookings
+WHERE booking_status IN ('Completed', 'Cancelled')
+GROUP BY booking_status;
+
+-- Q20. Show each customer's latest booking using a window function
+WITH ranked_bookings AS (
+    SELECT b.customer_id, b.booking_id, b.show_date, b.ticket_amount,
+           ROW_NUMBER() OVER (
+               PARTITION BY b.customer_id
+               ORDER BY b.show_date DESC
+           ) AS rn
+    FROM bookings b
+)
+SELECT c.customer_name, rb.booking_id, rb.show_date, rb.ticket_amount
+FROM ranked_bookings rb
+JOIN customers c ON rb.customer_id = c.customer_id
+WHERE rb.rn = 1;
